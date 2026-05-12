@@ -3,4 +3,6 @@ project(membrane)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(membrane src/main.cpp)
+set(PROJECT_SOURCES src/main.cpp src/mbnwrite.cpp)
+
+add_executable(membrane ${PROJECT_SOURCES})
