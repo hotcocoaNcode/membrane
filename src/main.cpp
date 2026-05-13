@@ -2,11 +2,14 @@
 #include <string>
 #include "mbnwrite.h"
 
-int main() {
-    std::vector<symtable_ent> symtable = {{"kernel_println"}, {"kernel_ret"}};
-    std::vector<uint8_t> data = {'h', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd', '!', '\n', 0, 14, 0};
-    std::vector<uint32_t> code = {0x01000000, 0x0101000E, 0x1D000000, 0x0100000F, 0x1D000001};
-
-    write_executable("helloworld.mbn", 0, symtable, data, code);
+int main(int argc, char** argv) {
+    if (argc > 2) {
+        assemble_file(argv[1], std::stoull(argv[2]));
+    } else if (argc == 2) {
+        std::cout << "warn; no dynamic memory requirement specified. assuming zero." << std::endl;
+        assemble_file(argv[1], 0);
+    } else {
+        std::cout << "err; no file provided to assemble" << std::endl;
+    }
     return 0;
 }

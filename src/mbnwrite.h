@@ -8,4 +8,5 @@ struct symtable_ent {
     uint64_t reserved_padding = 0;
 };
 
-bool write_executable(std::string name, uint32_t dynamic_mem, std::vector<symtable_ent> symtable, std::vector<uint8_t> data, std::vector<uint32_t> code);
+bool assemble_file(const std::string& name, const uint32_t& dynamic_mem);
+bool write_executable(const std::string& name, const uint32_t& dynamic_mem, const std::vector<symtable_ent>& symtable, const std::vector<uint8_t>& data, const std::vector<uint32_t>& code);
