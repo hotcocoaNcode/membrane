@@ -9,6 +9,7 @@ end
 
 ; 0: result, 1: add1 2: add2, 3: iter, 4: constant 1
 begin exec
+
 li 0 0
 li 1 1
 li 2 0
@@ -22,5 +23,5 @@ sub 3 3 4 ; i--
 jmpnz 3 -5 ; i != 0, jump to add
 swa 0 output ; store to memory, kernel_ret takes an address
 li 0 output ; load output address
-kcall 0
+kcall kernel_ret
 end

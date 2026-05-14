@@ -226,6 +226,10 @@ void exec(std::string fname) {
                 }
                 break;
             case 0x1C: // call
+                if ((pc + 1) == 256) {
+                    std::cerr << "err; callstack overflow" << std::endl;
+                    exit(0);
+                }
                 bitmasked_u24 = (*reinterpret_cast<uint32_t*>(&current)) & 0x00FFFFFF;
                 program_stack[program_stack_top++] = pc;
                 pc = bitmasked_u24;
@@ -234,9 +238,14 @@ void exec(std::string fname) {
                 bitmasked_u24 = (*reinterpret_cast<uint32_t*>(&current)) & 0x00FFFFFF;
                 symtab[bitmasked_u24]();
                 break;
-            case 0x1E:
+            case 0x1E: // ret
+                if (pc == 0) {
+                    std::cerr << "err; callstack underflow" << std::endl;
+                    exit(0);
+                }
                 pc = program_stack[--program_stack_top];
-            case 0x1F:
+                break;
+            case 0x1F: // halt
                 halt = true;
                 break;
             default:

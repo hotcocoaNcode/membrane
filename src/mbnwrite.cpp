@@ -35,42 +35,42 @@ enum assembler_section {
     NONE, DATA, SYMTABLE, CODE
 };
 
-void parseData(std::vector<std::string> parsable, std::vector<uint8_t>& data, std::unordered_map<std::string, uint32_t>& data_indices) {
+void parseData(std::vector<std::string> parsable, std::vector<uint8_t>& data, std::unordered_map<std::string, uint32_t>& assembly_symbol_map) {
     if (streq(parsable[1], "u8")) {
         uint8_t u8 = std::stoull(parsable[2]);
-        data_indices.emplace(parsable[0], data.size());
+        assembly_symbol_map.emplace(parsable[0], data.size());
         data.push_back(u8);
     } else if (streq(parsable[1], "u16")) {
         uint16_t u16 = std::stoull(parsable[2]);
-        data_indices.emplace(parsable[0], data.size());
+        assembly_symbol_map.emplace(parsable[0], data.size());
         for (int i = 0; i < sizeof(u16); i++) {
             data.push_back(reinterpret_cast<uint8_t*>(&u16)[i]);
         }
     } else if (streq(parsable[1], "u32")) {
         uint32_t u32 = std::stoull(parsable[2]);
-        data_indices.emplace(parsable[0], data.size());
+        assembly_symbol_map.emplace(parsable[0], data.size());
         for (int i = 0; i < sizeof(u32); i++) {
             data.push_back(reinterpret_cast<uint8_t*>(&u32)[i]);
         }
     } else if (streq(parsable[1], "i8")) {
         int8_t i8 = std::stoi(parsable[2]);
-        data_indices.emplace(parsable[0], data.size());
+        assembly_symbol_map.emplace(parsable[0], data.size());
         data.push_back(i8);
     } else if (streq(parsable[1], "i16")) {
         int16_t i16 = std::stoi(parsable[2]);
-        data_indices.emplace(parsable[0], data.size());
+        assembly_symbol_map.emplace(parsable[0], data.size());
         for (int i = 0; i < sizeof(i16); i++) {
             data.push_back(reinterpret_cast<uint8_t*>(&i16)[i]);
         }
     } else if (streq(parsable[1], "i32")) {
         int32_t i32 = std::stoi(parsable[2]);
-        data_indices.emplace(parsable[0], data.size());
+        assembly_symbol_map.emplace(parsable[0], data.size());
         for (int i = 0; i < sizeof(i32); i++) {
             data.push_back(reinterpret_cast<uint8_t*>(&i32)[i]);
         }
     } else if (streq(parsable[1], "ascii")) {
         std::string ascii_escape_parsed = "";
-        data_indices.emplace(parsable[0], data.size());
+        assembly_symbol_map.emplace(parsable[0], data.size());
         for (int i = 0; i < parsable[2].length(); i++) {
             if (parsable[2][i] == '\\') {
                 char hex[2]; // for \xFF codes, have to init outside of switch
@@ -120,9 +120,10 @@ void parseData(std::vector<std::string> parsable, std::vector<uint8_t>& data, st
     }
 }
 
-void parseSymtable(std::vector<std::string> parsable, std::vector<symtable_ent>& symtable) {
+void parseSymtable(std::vector<std::string> parsable, std::vector<symtable_ent>& symtable, std::unordered_map<std::string, uint32_t>& assembly_symbol_map) {
     symtable_ent entry{};
     memcpy(&(entry.name), parsable[0].c_str(), std::min(parsable[0].length(), static_cast<size_t>(24)));
+    assembly_symbol_map.emplace(parsable[0], symtable.size());
     symtable.push_back(entry);
 }
 
@@ -140,20 +141,20 @@ uint32_t data_index_map(std::string in, const std::unordered_map<std::string, ui
     }
 }
 
-void inst_unsigned_imm24(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code) {
-    uint32_t inst = (icode) << 24; 
-    inst |= (std::stoul(parsable[1]) & 0x00FFFFFF); 
+void inst_unsigned_imm24(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code, const std::unordered_map<std::string, uint32_t>& assembly_symbol_map) {
+    uint32_t inst = (icode) << 24;  
+    inst |= (data_index_map(parsable[1], assembly_symbol_map) & 0x00FFFFFF); 
     code.push_back(inst);
 }
 
-void inst_ra_unsigned_imm16(int icode, std::vector<std::string> parsable, std::unordered_map<std::string, uint32_t> data_indices, std::vector<uint32_t>& code) {
+void inst_ra_unsigned_imm16(int icode, std::vector<std::string> parsable, std::unordered_map<std::string, uint32_t> assembly_symbol_map, std::vector<uint32_t>& code) {
     uint32_t inst = (icode) << 24; 
     inst |= (std::stoul(parsable[1]) & 0xFF) << 16; 
-    inst |= (data_index_map(parsable[2], data_indices) & 0xFFFF); 
+    inst |= (data_index_map(parsable[2], assembly_symbol_map) & 0xFFFF); 
     code.push_back(inst);
 }
 
-void inst_ra_signed_imm16(int icode, std::vector<std::string> parsable, std::unordered_map<std::string, uint32_t> data_indices, std::vector<uint32_t>& code) {
+void inst_ra_signed_imm16(int icode, std::vector<std::string> parsable, std::unordered_map<std::string, uint32_t> assembly_symbol_map, std::vector<uint32_t>& code) {
     uint32_t inst = (icode) << 24; 
     inst |= (std::stoul(parsable[1]) & 0xFF) << 16; 
     // avoiding a weird implicit compiler cast
@@ -201,9 +202,9 @@ void inst_signed_imm16(int icode, std::vector<std::string> parsable, std::vector
     code.push_back(inst);
 }
 
-void parseISA(std::vector<std::string> parsable, std::vector<uint32_t>& code, std::unordered_map<std::string, uint32_t>& data_indices) {
+void parseISA(std::vector<std::string> parsable, std::vector<uint32_t>& code, std::unordered_map<std::string, uint32_t>& assembly_symbol_map) {
     if (streq(parsable[0], "mark")) {
-        data_indices.emplace(parsable[1], code.size());
+        assembly_symbol_map.emplace(parsable[1], code.size());
     } else if (streq(parsable[0], "nop")) {
         code.push_back(0);
     } else if (streq(parsable[0], "ret")) {
@@ -211,11 +212,11 @@ void parseISA(std::vector<std::string> parsable, std::vector<uint32_t>& code, st
     } else if (streq(parsable[0], "halt")) {
         code.push_back(0x1F << 24);
     } else if (streq(parsable[0], "li")) {
-        inst_ra_unsigned_imm16(0x01, parsable, data_indices, code);
+        inst_ra_unsigned_imm16(0x01, parsable, assembly_symbol_map, code);
     } else if (streq(parsable[0], "lui")) {
-        inst_ra_unsigned_imm16(0x02, parsable, data_indices, code);
+        inst_ra_unsigned_imm16(0x02, parsable, assembly_symbol_map, code);
     } else if (streq(parsable[0], "lwa")) {
-        inst_ra_unsigned_imm16(0x03, parsable, data_indices, code);
+        inst_ra_unsigned_imm16(0x03, parsable, assembly_symbol_map, code);
     } else if (streq(parsable[0], "lwr")) {
         if (parsable.size() > 3) {
             // technically this is ra_rb_imm8 but this works enough. no register aliasing
@@ -224,7 +225,7 @@ void parseISA(std::vector<std::string> parsable, std::vector<uint32_t>& code, st
             inst_ra_rb_cnst(0x04, parsable, code, 4);
         }
     } else if (streq(parsable[0], "swa")) {
-        inst_ra_unsigned_imm16(0x05, parsable, data_indices, code);
+        inst_ra_unsigned_imm16(0x05, parsable, assembly_symbol_map, code);
     } else if (streq(parsable[0], "swr")) {
         if (parsable.size() > 3) {
             // ra_rb_imm8 again
@@ -271,13 +272,13 @@ void parseISA(std::vector<std::string> parsable, std::vector<uint32_t>& code, st
     } else if (streq(parsable[0], "jmp")) {
         inst_signed_imm16(0x19, parsable, code);
     } else if (streq(parsable[0], "jmpz")) {
-        inst_ra_signed_imm16(0x1A, parsable, data_indices, code);
+        inst_ra_signed_imm16(0x1A, parsable, assembly_symbol_map, code);
     } else if (streq(parsable[0], "jmpnz")) {
-        inst_ra_signed_imm16(0x1B, parsable, data_indices, code);
+        inst_ra_signed_imm16(0x1B, parsable, assembly_symbol_map, code);
     } else if (streq(parsable[0], "call")) {
-        inst_unsigned_imm24(0x1C, parsable, code);
+        inst_unsigned_imm24(0x1C, parsable, code, assembly_symbol_map);
     } else if (streq(parsable[0], "kcall")) {
-        inst_unsigned_imm24(0x1D, parsable, code);
+        inst_unsigned_imm24(0x1D, parsable, code, assembly_symbol_map);
     } else {
         std::cout << "warn; unknown instruction " << parsable[0] << "! ommitting." << std::endl;
     }
@@ -296,7 +297,7 @@ bool assemble_file(const std::string& name, const uint32_t& dynamic_mem) {
     std::vector<symtable_ent> symtable{};
     std::vector<uint8_t> data{};
     std::vector<uint32_t> code{};
-    std::unordered_map<std::string, uint32_t> data_indices{};
+    std::unordered_map<std::string, uint32_t> assembly_symbol_map{};
 
     std::string line;
 
@@ -320,15 +321,15 @@ bool assemble_file(const std::string& name, const uint32_t& dynamic_mem) {
                 break;
             case DATA:
                 std::cout << " (dmode)" << std::endl;
-                parseData(parsable, data, data_indices);
+                parseData(parsable, data, assembly_symbol_map);
                 break;
             case SYMTABLE:
                 std::cout << " (stmode)" << std::endl;
-                parseSymtable(parsable, symtable);
+                parseSymtable(parsable, symtable, assembly_symbol_map);
                 break;
             case CODE:
                 std::cout << " (cmode)" << std::endl;
-                parseISA(parsable, code, data_indices);
+                parseISA(parsable, code, assembly_symbol_map);
                 break;
             default:
                 continue;
