@@ -5,7 +5,6 @@ end
 
 begin symtable
 kernel_ret
-kernel_println
 end
 
 ; 0: result, 1: add1 2: add2, 3: iter, 4: constant 1
