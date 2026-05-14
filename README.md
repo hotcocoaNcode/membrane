@@ -106,4 +106,7 @@ struct inst {
 }
 ```
 
-If you somehow end up working with the bytecode itself, I assume you can read code and will end up browsing this project anyways. I'm not going to list every instruction here, because that would be a lot more typing than I'd like. Please see src/mbnwrite.cpp or src/mbnemu.cpp for reference.
+If you somehow end up working with the bytecode itself, I assume you can read code and will end up browsing this project anyways. I'm not going to list every instruction here, because that would be a lot more typing than I'd like. Please see src/mbnwrite.cpp or src/mbnemu.cpp for reference. 
+
+As previously noted, your implementation may define a power-of-two modulo on register addresses. 
+The amount of registers you support certainly does not need to be 256, but I would argue limiting it to 32 is reasonable and 16 is aggressive, and may limit support. If you are developing a compiler for some language to run on membrane, please limit your register usage by default and consider emitting a warning if an expression somehow requires more than 128 registers to evalute.
