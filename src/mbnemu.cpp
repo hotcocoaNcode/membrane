@@ -240,7 +240,7 @@ void exec(std::string fname) {
                 halt = true;
                 break;
             default:
-                std::cerr << "err; unknown instruction " << current.opcode << " at " << pc << std::endl;
+                std::cerr << "err; unknown opcode " << static_cast<uint32_t>(current.opcode) << " at " << pc << std::endl;
                 exit(0);
         }
     }

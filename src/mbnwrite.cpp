@@ -142,56 +142,62 @@ uint32_t data_index_map(std::string in, const std::unordered_map<std::string, ui
 
 void inst_unsigned_imm24(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code) {
     uint32_t inst = (icode) << 24; 
-    inst |= (std::stoul(parsable[1]) % 0xFFFFFF); 
+    inst |= (std::stoul(parsable[1]) & 0x00FFFFFF); 
     code.push_back(inst);
 }
 
 void inst_ra_unsigned_imm16(int icode, std::vector<std::string> parsable, std::unordered_map<std::string, uint32_t> data_indices, std::vector<uint32_t>& code) {
     uint32_t inst = (icode) << 24; 
-    inst |= (std::stoul(parsable[1]) % 0xFF) << 16; 
-    inst |= (data_index_map(parsable[2], data_indices) % 0xFFFF); 
+    inst |= (std::stoul(parsable[1]) & 0xFF) << 16; 
+    inst |= (data_index_map(parsable[2], data_indices) & 0xFFFF); 
     code.push_back(inst);
 }
 
 void inst_ra_signed_imm16(int icode, std::vector<std::string> parsable, std::unordered_map<std::string, uint32_t> data_indices, std::vector<uint32_t>& code) {
     uint32_t inst = (icode) << 24; 
-    inst |= (std::stoul(parsable[1]) % 0xFF) << 16; 
-    inst |= static_cast<signed short>(std::stoi(parsable[2])); 
+    inst |= (std::stoul(parsable[1]) & 0xFF) << 16; 
+    // avoiding a weird implicit compiler cast
+    int16_t a = static_cast<int16_t>(std::stoi(parsable[2]));
+    uint16_t* b = reinterpret_cast<uint16_t*>(&a);
+    inst |= *b;
     code.push_back(inst);
 }
 
 void inst_ra_rb_rc(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code) {
     uint32_t inst = (icode) << 24; 
-    inst |= (std::stoul(parsable[1]) % 0xFF) << 16; 
-    inst |= (std::stoul(parsable[2]) % 0xFF) << 8; 
-    inst |= (std::stoul(parsable[3]) % 0xFF); 
+    inst |= (std::stoul(parsable[1]) & 0xFF) << 16; 
+    inst |= (std::stoul(parsable[2]) & 0xFF) << 8; 
+    inst |= (std::stoul(parsable[3]) & 0xFF); 
     code.push_back(inst);
 }
 
 void inst_ra_rb(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code) {
     uint32_t inst = (icode) << 24; 
-    inst |= (std::stoul(parsable[1]) % 0xFF) << 16; 
-    inst |= (std::stoul(parsable[2]) % 0xFF) << 8; 
+    inst |= (std::stoul(parsable[1]) & 0xFF) << 16; 
+    inst |= (std::stoul(parsable[2]) & 0xFF) << 8; 
     code.push_back(inst);
 }
 
 void inst_ra_rb_cnst(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code, uint8_t cnst) {
     uint32_t inst = (icode) << 24; 
-    inst |= (std::stoul(parsable[1]) % 0xFF) << 16; 
-    inst |= (std::stoul(parsable[2]) % 0xFF) << 8; 
+    inst |= (std::stoul(parsable[1]) & 0xFF) << 16; 
+    inst |= (std::stoul(parsable[2]) & 0xFF) << 8; 
     inst |= (cnst);
     code.push_back(inst);
 }
 
 void inst_unsigned_imm16(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code) {
     uint32_t inst = (icode) << 24; 
-    inst |= (std::stoul(parsable[1]) % 0xFFFF); 
+    inst |= (std::stoul(parsable[1]) & 0xFFFF); 
     code.push_back(inst);
 }
 
 void inst_signed_imm16(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code) {
     uint32_t inst = (icode) << 24; 
-    inst |= static_cast<signed short>(std::stoi(parsable[1])); 
+    // once again avoiding the weird implicit cast
+    int16_t a = static_cast<int16_t>(std::stoi(parsable[1]));
+    uint16_t* b = reinterpret_cast<uint16_t*>(&a);
+    inst |= *b; 
     code.push_back(inst);
 }
 
@@ -328,7 +334,7 @@ bool assemble_file(const std::string& name, const uint32_t& dynamic_mem) {
                 continue;
         }
     }
-    auto data_rollover = data.size() % 16;
+    auto data_rollover = 16 - (data.size() % 16);
     for (int i = 0; i < data_rollover; i++) {
         data.push_back(0);
     }
