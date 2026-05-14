@@ -140,10 +140,23 @@ uint32_t data_index_map(std::string in, const std::unordered_map<std::string, ui
     }
 }
 
-void inst_ra_imm16(int icode, std::vector<std::string> parsable, std::unordered_map<std::string, uint32_t> data_indices, std::vector<uint32_t>& code) {
+void inst_unsigned_imm24(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code) {
+    uint32_t inst = (icode) << 24; 
+    inst |= (std::stoul(parsable[1]) % 0xFFFFFF); 
+    code.push_back(inst);
+}
+
+void inst_ra_unsigned_imm16(int icode, std::vector<std::string> parsable, std::unordered_map<std::string, uint32_t> data_indices, std::vector<uint32_t>& code) {
     uint32_t inst = (icode) << 24; 
     inst |= (std::stoul(parsable[1]) % 0xFF) << 16; 
     inst |= (data_index_map(parsable[2], data_indices) % 0xFFFF); 
+    code.push_back(inst);
+}
+
+void inst_ra_signed_imm16(int icode, std::vector<std::string> parsable, std::unordered_map<std::string, uint32_t> data_indices, std::vector<uint32_t>& code) {
+    uint32_t inst = (icode) << 24; 
+    inst |= (std::stoul(parsable[1]) % 0xFF) << 16; 
+    inst |= static_cast<signed short>(std::stoi(parsable[2])); 
     code.push_back(inst);
 }
 
@@ -162,9 +175,23 @@ void inst_ra_rb(int icode, std::vector<std::string> parsable, std::vector<uint32
     code.push_back(inst);
 }
 
-void inst_imm24(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code) {
+void inst_ra_rb_cnst(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code, uint8_t cnst) {
     uint32_t inst = (icode) << 24; 
-    inst |= (std::stoul(parsable[1]) % 0xFFFFFF); 
+    inst |= (std::stoul(parsable[1]) % 0xFF) << 16; 
+    inst |= (std::stoul(parsable[2]) % 0xFF) << 8; 
+    inst |= (cnst);
+    code.push_back(inst);
+}
+
+void inst_unsigned_imm16(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code) {
+    uint32_t inst = (icode) << 24; 
+    inst |= (std::stoul(parsable[1]) % 0xFFFF); 
+    code.push_back(inst);
+}
+
+void inst_signed_imm16(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code) {
+    uint32_t inst = (icode) << 24; 
+    inst |= static_cast<signed short>(std::stoi(parsable[1])); 
     code.push_back(inst);
 }
 
@@ -178,17 +205,27 @@ void parseISA(std::vector<std::string> parsable, std::vector<uint32_t>& code, st
     } else if (streq(parsable[0], "halt")) {
         code.push_back(0x1F << 24);
     } else if (streq(parsable[0], "li")) {
-        inst_ra_imm16(0x01, parsable, data_indices, code);
+        inst_ra_unsigned_imm16(0x01, parsable, data_indices, code);
     } else if (streq(parsable[0], "lui")) {
-        inst_ra_imm16(0x02, parsable, data_indices, code);
+        inst_ra_unsigned_imm16(0x02, parsable, data_indices, code);
     } else if (streq(parsable[0], "lwa")) {
-        inst_ra_imm16(0x03, parsable, data_indices, code);
+        inst_ra_unsigned_imm16(0x03, parsable, data_indices, code);
     } else if (streq(parsable[0], "lwr")) {
-        inst_ra_rb_rc(0x04, parsable, code);
+        if (parsable.size() > 3) {
+            // technically this is ra_rb_imm8 but this works enough. no register aliasing
+            inst_ra_rb_rc(0x04, parsable, code);
+        } else {
+            inst_ra_rb_cnst(0x04, parsable, code, 4);
+        }
     } else if (streq(parsable[0], "swa")) {
-        inst_ra_imm16(0x05, parsable, data_indices, code);
+        inst_ra_unsigned_imm16(0x05, parsable, data_indices, code);
     } else if (streq(parsable[0], "swr")) {
-        inst_ra_rb(0x06, parsable, code);
+        if (parsable.size() > 3) {
+            // ra_rb_imm8 again
+            inst_ra_rb_rc(0x06, parsable, code);
+        } else {
+            inst_ra_rb_cnst(0x06, parsable, code, 4);
+        }
     } else if (streq(parsable[0], "mov")) {
         inst_ra_rb(0x07, parsable, code);
     } else if (streq(parsable[0], "add")) {
@@ -226,15 +263,15 @@ void parseISA(std::vector<std::string> parsable, std::vector<uint32_t>& code, st
     } else if (streq(parsable[0], "ltes")) {
         inst_ra_rb_rc(0x18, parsable, code);
     } else if (streq(parsable[0], "jmp")) {
-        inst_imm24(0x19, parsable, code);
+        inst_signed_imm16(0x19, parsable, code);
     } else if (streq(parsable[0], "jmpz")) {
-        inst_ra_imm16(0x1A, parsable, data_indices, code);
+        inst_ra_signed_imm16(0x1A, parsable, data_indices, code);
     } else if (streq(parsable[0], "jmpnz")) {
-        inst_ra_imm16(0x1B, parsable, data_indices, code);
+        inst_ra_signed_imm16(0x1B, parsable, data_indices, code);
     } else if (streq(parsable[0], "call")) {
-        inst_imm24(0x1C, parsable, code);
+        inst_unsigned_imm24(0x1C, parsable, code);
     } else if (streq(parsable[0], "kcall")) {
-        inst_imm24(0x1D, parsable, code);
+        inst_unsigned_imm24(0x1D, parsable, code);
     } else {
         std::cout << "warn; unknown instruction " << parsable[0] << "! ommitting." << std::endl;
     }
