@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
             assemble_file(argv[1], 0);
         }
     } else {
-        std::cout << "err; no file provided! pass either a .ms to assemble or a .mbn to run." << std::endl;
+        std::cout << "err; no file provided! pass either a .mbs to assemble or a .mbn to run." << std::endl;
     }
     return 0;
 }

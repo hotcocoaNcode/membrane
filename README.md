@@ -7,7 +7,7 @@ Membrane is a low-overhead reduced instruction set bytecode (RISB?) intended for
 
 This program implements an assembler for its bytecode, and an emulator for running said bytecode. Eventually this emulator may support standard Coenosarc system calls, however I have no idea what those will look like yet, and have left some temporary utility calls in their place.
 
-To assemble a `.ms` (membrane source) file, simply execute `membrane ./path/to/file.ms`. To execute a `.mbn` (membrane) file, execute `membrane ./path/to/executable.mbn`.
+To assemble a `.mbs` (membrane source) file, simply execute `membrane ./path/to/file.mbs`. To execute a `.mbn` (membrane) file, execute `membrane ./path/to/executable.mbn`.
 
 ## Assembly Language
 

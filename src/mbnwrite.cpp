@@ -141,20 +141,20 @@ uint32_t data_index_map(std::string in, const std::unordered_map<std::string, ui
     }
 }
 
-void inst_unsigned_imm24(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code, const std::unordered_map<std::string, uint32_t>& assembly_symbol_map) {
+void emit_unsigned_imm24(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code, const std::unordered_map<std::string, uint32_t>& assembly_symbol_map) {
     uint32_t inst = (icode) << 24;  
     inst |= (data_index_map(parsable[1], assembly_symbol_map) & 0x00FFFFFF); 
     code.push_back(inst);
 }
 
-void inst_ra_unsigned_imm16(int icode, std::vector<std::string> parsable, std::unordered_map<std::string, uint32_t> assembly_symbol_map, std::vector<uint32_t>& code) {
+void emit_ra_unsigned_imm16(int icode, std::vector<std::string> parsable, std::unordered_map<std::string, uint32_t> assembly_symbol_map, std::vector<uint32_t>& code) {
     uint32_t inst = (icode) << 24; 
     inst |= (std::stoul(parsable[1]) & 0xFF) << 16; 
     inst |= (data_index_map(parsable[2], assembly_symbol_map) & 0xFFFF); 
     code.push_back(inst);
 }
 
-void inst_ra_signed_imm16(int icode, std::vector<std::string> parsable, std::unordered_map<std::string, uint32_t> assembly_symbol_map, std::vector<uint32_t>& code) {
+void emit_ra_signed_imm16(int icode, std::vector<std::string> parsable, std::unordered_map<std::string, uint32_t> assembly_symbol_map, std::vector<uint32_t>& code) {
     uint32_t inst = (icode) << 24; 
     inst |= (std::stoul(parsable[1]) & 0xFF) << 16; 
     // avoiding a weird implicit compiler cast
@@ -164,7 +164,7 @@ void inst_ra_signed_imm16(int icode, std::vector<std::string> parsable, std::uno
     code.push_back(inst);
 }
 
-void inst_ra_rb_rc(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code) {
+void emit_ra_rb_rc(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code) {
     uint32_t inst = (icode) << 24; 
     inst |= (std::stoul(parsable[1]) & 0xFF) << 16; 
     inst |= (std::stoul(parsable[2]) & 0xFF) << 8; 
@@ -172,14 +172,14 @@ void inst_ra_rb_rc(int icode, std::vector<std::string> parsable, std::vector<uin
     code.push_back(inst);
 }
 
-void inst_ra_rb(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code) {
+void emit_ra_rb(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code) {
     uint32_t inst = (icode) << 24; 
     inst |= (std::stoul(parsable[1]) & 0xFF) << 16; 
     inst |= (std::stoul(parsable[2]) & 0xFF) << 8; 
     code.push_back(inst);
 }
 
-void inst_ra_rb_cnst(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code, uint8_t cnst) {
+void emit_ra_rb_cnst(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code, uint8_t cnst) {
     uint32_t inst = (icode) << 24; 
     inst |= (std::stoul(parsable[1]) & 0xFF) << 16; 
     inst |= (std::stoul(parsable[2]) & 0xFF) << 8; 
@@ -187,13 +187,13 @@ void inst_ra_rb_cnst(int icode, std::vector<std::string> parsable, std::vector<u
     code.push_back(inst);
 }
 
-void inst_unsigned_imm16(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code) {
+void emit_unsigned_imm16(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code) {
     uint32_t inst = (icode) << 24; 
     inst |= (std::stoul(parsable[1]) & 0xFFFF); 
     code.push_back(inst);
 }
 
-void inst_signed_imm16(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code) {
+void emit_signed_imm16(int icode, std::vector<std::string> parsable, std::vector<uint32_t>& code) {
     uint32_t inst = (icode) << 24; 
     // once again avoiding the weird implicit cast
     int16_t a = static_cast<int16_t>(std::stoi(parsable[1]));
@@ -212,81 +212,81 @@ void parseISA(std::vector<std::string> parsable, std::vector<uint32_t>& code, st
     } else if (streq(parsable[0], "halt")) {
         code.push_back(0x1F << 24);
     } else if (streq(parsable[0], "li")) {
-        inst_ra_unsigned_imm16(0x01, parsable, assembly_symbol_map, code);
+        emit_ra_unsigned_imm16(0x01, parsable, assembly_symbol_map, code);
     } else if (streq(parsable[0], "lui")) {
-        inst_ra_unsigned_imm16(0x02, parsable, assembly_symbol_map, code);
+        emit_ra_unsigned_imm16(0x02, parsable, assembly_symbol_map, code);
     } else if (streq(parsable[0], "lwa")) {
-        inst_ra_unsigned_imm16(0x03, parsable, assembly_symbol_map, code);
+        emit_ra_unsigned_imm16(0x03, parsable, assembly_symbol_map, code);
     } else if (streq(parsable[0], "lwr")) {
         if (parsable.size() > 3) {
             // technically this is ra_rb_imm8 but this works enough. no register aliasing
-            inst_ra_rb_rc(0x04, parsable, code);
+            emit_ra_rb_rc(0x04, parsable, code);
         } else {
-            inst_ra_rb_cnst(0x04, parsable, code, 4);
+            emit_ra_rb_cnst(0x04, parsable, code, 4);
         }
     } else if (streq(parsable[0], "swa")) {
-        inst_ra_unsigned_imm16(0x05, parsable, assembly_symbol_map, code);
+        emit_ra_unsigned_imm16(0x05, parsable, assembly_symbol_map, code);
     } else if (streq(parsable[0], "swr")) {
         if (parsable.size() > 3) {
             // ra_rb_imm8 again
-            inst_ra_rb_rc(0x06, parsable, code);
+            emit_ra_rb_rc(0x06, parsable, code);
         } else {
-            inst_ra_rb_cnst(0x06, parsable, code, 4);
+            emit_ra_rb_cnst(0x06, parsable, code, 4);
         }
     } else if (streq(parsable[0], "mov")) {
-        inst_ra_rb(0x07, parsable, code);
+        emit_ra_rb(0x07, parsable, code);
     } else if (streq(parsable[0], "add")) {
-        inst_ra_rb_rc(0x08, parsable, code);
+        emit_ra_rb_rc(0x08, parsable, code);
     } else if (streq(parsable[0], "sub")) {
-        inst_ra_rb_rc(0x09, parsable, code);
+        emit_ra_rb_rc(0x09, parsable, code);
     } else if (streq(parsable[0], "mul")) {
-        inst_ra_rb_rc(0x0A, parsable, code);
+        emit_ra_rb_rc(0x0A, parsable, code);
     } else if (streq(parsable[0], "div")) {
-        inst_ra_rb_rc(0x0B, parsable, code);
+        emit_ra_rb_rc(0x0B, parsable, code);
     } else if (streq(parsable[0], "mod")) {
-        inst_ra_rb_rc(0x0C, parsable, code);
+        emit_ra_rb_rc(0x0C, parsable, code);
     } else if (streq(parsable[0], "and")) {
-        inst_ra_rb_rc(0x0D, parsable, code);
+        emit_ra_rb_rc(0x0D, parsable, code);
     } else if (streq(parsable[0], "or")) {
-        inst_ra_rb_rc(0x0E, parsable, code);
+        emit_ra_rb_rc(0x0E, parsable, code);
     } else if (streq(parsable[0], "xor")) {
-        inst_ra_rb_rc(0x0F, parsable, code);
+        emit_ra_rb_rc(0x0F, parsable, code);
     } else if (streq(parsable[0], "not")) {
-        inst_ra_rb(0x10, parsable, code);
+        emit_ra_rb(0x10, parsable, code);
     } else if (streq(parsable[0], "shl")) {
-        inst_ra_rb_rc(0x11, parsable, code);
+        emit_ra_rb_rc(0x11, parsable, code);
     } else if (streq(parsable[0], "shr")) {
-        inst_ra_rb_rc(0x12, parsable, code);
+        emit_ra_rb_rc(0x12, parsable, code);
     } else if (streq(parsable[0], "eq")) {
-        inst_ra_rb_rc(0x13, parsable, code);
+        emit_ra_rb_rc(0x13, parsable, code);
     } else if (streq(parsable[0], "neq")) {
-        inst_ra_rb_rc(0x14, parsable, code);
+        emit_ra_rb_rc(0x14, parsable, code);
     } else if (streq(parsable[0], "ltu")) {
-        inst_ra_rb_rc(0x15, parsable, code);
+        emit_ra_rb_rc(0x15, parsable, code);
     } else if (streq(parsable[0], "lts")) {
-        inst_ra_rb_rc(0x16, parsable, code);
+        emit_ra_rb_rc(0x16, parsable, code);
     } else if (streq(parsable[0], "lteu")) {
-        inst_ra_rb_rc(0x17, parsable, code);
+        emit_ra_rb_rc(0x17, parsable, code);
     } else if (streq(parsable[0], "ltes")) {
-        inst_ra_rb_rc(0x18, parsable, code);
+        emit_ra_rb_rc(0x18, parsable, code);
     } else if (streq(parsable[0], "jmp")) {
-        inst_signed_imm16(0x19, parsable, code);
+        emit_signed_imm16(0x19, parsable, code);
     } else if (streq(parsable[0], "jmpz")) {
-        inst_ra_signed_imm16(0x1A, parsable, assembly_symbol_map, code);
+        emit_ra_signed_imm16(0x1A, parsable, assembly_symbol_map, code);
     } else if (streq(parsable[0], "jmpnz")) {
-        inst_ra_signed_imm16(0x1B, parsable, assembly_symbol_map, code);
+        emit_ra_signed_imm16(0x1B, parsable, assembly_symbol_map, code);
     } else if (streq(parsable[0], "call")) {
-        inst_unsigned_imm24(0x1C, parsable, code, assembly_symbol_map);
+        emit_unsigned_imm24(0x1C, parsable, code, assembly_symbol_map);
     } else if (streq(parsable[0], "kcall")) {
-        inst_unsigned_imm24(0x1D, parsable, code, assembly_symbol_map);
+        emit_unsigned_imm24(0x1D, parsable, code, assembly_symbol_map);
     } else {
         std::cout << "warn; unknown instruction " << parsable[0] << "! ommitting." << std::endl;
     }
 }
 
 bool assemble_file(const std::string& name, const uint32_t& dynamic_mem) {
-    if (!(name[name.length()-1] == 's' && name[name.length()-2] == 'm' && name[name.length()-3] == '.')) {
-        std::cerr << "err; file " << name << " is not a .ms (membrane source)!" << std::endl;
+    if (!(name[name.length()-1] == 's' && name[name.length()-2] == 'b' && name[name.length()-3] == 'm')) {
+        std::cerr << "err; file " << name << " is not a .mbs (membrane source)!" << std::endl;
         return false;
     }
     std::ifstream fi(name);
@@ -340,7 +340,7 @@ bool assemble_file(const std::string& name, const uint32_t& dynamic_mem) {
         data.push_back(0);
     }
     std::string executable_name = name;
-    executable_name.resize(name.length()-3);
+    executable_name.resize(name.length()-4);
     executable_name += ".mbn";
     return write_executable(executable_name, dynamic_mem, symtable, data, code);
 }
@@ -356,8 +356,6 @@ bool write_executable(const std::string& name, const uint32_t& dynamic_mem, cons
     uint16_t data_section_size = data.size()/16;
     uint32_t offset = 22+symtable.size()*32+data.size();
     uint32_t mem_max = dynamic_mem + data.size();
-
-    char zeroes_block_arr[16] = {};
     
     std::ofstream fo;
     fo.open(name, std::ios::binary | std::ios::out | std::ios::trunc);
