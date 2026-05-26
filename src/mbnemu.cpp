@@ -25,7 +25,6 @@ void f_kernel_ret() {
     halt = true;
 }
 
-
 void (*symtable_lookup(std::string name))(void) {
     if (name.compare("kernel_println") == 0) {
         return f_kernel_println;
@@ -226,7 +225,7 @@ void exec(std::string fname) {
                 }
                 break;
             case 0x1C: // call
-                if ((pc + 1) == 256) {
+                if ((program_stack_top + 1) == 256) {
                     std::cerr << "err; callstack overflow" << std::endl;
                     exit(0);
                 }
@@ -239,7 +238,7 @@ void exec(std::string fname) {
                 symtab[bitmasked_u24]();
                 break;
             case 0x1E: // ret
-                if (pc == 0) {
+                if (program_stack_top == 0) {
                     std::cerr << "err; callstack underflow" << std::endl;
                     exit(0);
                 }

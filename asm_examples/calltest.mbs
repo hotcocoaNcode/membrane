@@ -1,0 +1,23 @@
+begin data
+helloworld ascii "ouppy barks!\n\x00"
+helloworld_len i8 14
+retval i8 0
+end
+
+begin symtable
+kernel_println
+kernel_ret
+end
+
+begin exec
+jmp 4 ; remember, program counter is incremented after this is executed. so jmp looks like
+mark hworld ; no instruction! mark is syntax only
+li 0 helloworld ; load text adr - 1
+li 1 helloworld_len ; load text length adr - 2
+kcall kernel_println ; call println - 3
+ret ; return from fn - 4
+call hworld ; jumps to here!
+call hworld
+li 0 retval
+kcall kernel_ret
+end
