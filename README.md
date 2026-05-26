@@ -92,7 +92,7 @@ Anywhere it says 'address', any name from the data section or symbol table shoul
 | jmpnz | arg ra, 16 bit signed constant | if `ra != 0`, relative to the next instruction, add signed constant to program counter |
 | mark | name | syntactic sugar. defines a `call`-able name for the next instruction in the program. |
 | call | 24 bit address | set program counter to a given value, and push the address of the next instruction to the callstack. |
-| kcall | 24 bit address | drop out of program and call a system function from the symbol table, defined by runtime implementation. |
+| kcall | 24 bit address | drop out of program and call a system function from the symbol table, defined by runtime implementation. consider all registers clobbered after this |
 | ret | none | pop the callstack, program counter returns to pre-call function |
 | halt | none | stop the program entirely |
 
