@@ -1,7 +1,9 @@
 #include "mbnwrite.h"
 #include <fstream>
 #include <iostream>
+#include <unordered_map>
 #include <cctype>
+#include <cstring>
 #include <algorithm>
 
 #define streq(a, b) (a.compare(b) == 0)

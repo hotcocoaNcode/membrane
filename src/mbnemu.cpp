@@ -1,5 +1,5 @@
 #include "mbnemu.h"
-
+#include <cstring>
 #include <iostream>
 #include <fstream>
 #include <unordered_map>

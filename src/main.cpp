@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <cstring>
 #include "mbnwrite.h"
 #include "mbnemu.h"
 
