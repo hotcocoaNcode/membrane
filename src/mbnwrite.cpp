@@ -38,7 +38,16 @@ enum assembler_section {
 };
 
 void parseData(std::vector<std::string> parsable, std::vector<uint8_t>& data, std::unordered_map<std::string, uint32_t>& assembly_symbol_map) {
-    if (streq(parsable[1], "u8")) {
+    // TODO: de-elif this if possible :sob:
+    if (streq(parsable[1], "arr")) {
+        // TODO: resolve this at the end of the pass rather than absurd amount of zero'd constant data
+        uint32_t length = std::stoull(parsable[2]);
+        assembly_symbol_map.emplace(parsable[0], data.size());
+        const uint8_t arr_dflt = 0; // maybe change l8r
+        for (int i = 0; i < length; i++) {
+            data.push_back(arr_dflt);
+        }
+    } else if (streq(parsable[1], "u8")) {
         uint8_t u8 = std::stoull(parsable[2]);
         assembly_symbol_map.emplace(parsable[0], data.size());
         data.push_back(u8);
