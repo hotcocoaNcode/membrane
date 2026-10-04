@@ -19,6 +19,12 @@ void f_kernel_println() {
     std::cout << std::string(printstr) << std::flush;
 }
 
+void f_kernel_readln() {
+    std::string bazinga{};
+    std::getline(std::cin, bazinga); 
+    memcpy(&(prgmem[vreg_arr[0]]), bazinga.c_str(), (prgmem[vreg_arr[1]] - 1));
+}
+
 void f_kernel_ret() {
     uint8_t return_code = prgmem[vreg_arr[0]];
     std::cout << "\nProgram exited with code " << static_cast<uint32_t>(return_code) << std::endl;
@@ -30,6 +36,8 @@ void (*symtable_lookup(std::string name))(void) {
         return f_kernel_println;
     } else if (name.compare("kernel_ret") == 0) {
         return f_kernel_ret;
+    } else if (name.compare("kernel_readln") == 0) {
+        return f_kernel_readln;
     }
     return nullptr;
 }
