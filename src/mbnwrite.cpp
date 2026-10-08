@@ -37,16 +37,13 @@ enum assembler_section {
     NONE, DATA, SYMTABLE, CODE
 };
 
-void parseData(std::vector<std::string> parsable, std::vector<uint8_t>& data, std::unordered_map<std::string, uint32_t>& assembly_symbol_map) {
+void parseData(std::vector<std::string> parsable, std::vector<uint8_t>& data, std::unordered_map<std::string, uint32_t>& assembly_symbol_map, std::unordered_map<std::string, uint32_t>& noncopy_arr_symbol_map, uint32_t& noncopy_arr_ctr) {
     // TODO: de-elif this if possible :sob:
     if (streq(parsable[1], "arr")) {
         // TODO: resolve this at the end of the pass rather than absurd amount of zero'd constant data
         uint32_t length = std::stoull(parsable[2]);
-        assembly_symbol_map.emplace(parsable[0], data.size());
-        const uint8_t arr_dflt = 0; // maybe change l8r
-        for (int i = 0; i < length; i++) {
-            data.push_back(arr_dflt);
-        }
+        noncopy_arr_symbol_map.emplace(parsable[0], noncopy_arr_ctr);
+        noncopy_arr_ctr += length;
     } else if (streq(parsable[1], "u8")) {
         uint8_t u8 = std::stoull(parsable[2]);
         assembly_symbol_map.emplace(parsable[0], data.size());
@@ -309,16 +306,30 @@ bool assemble_file(const std::string& name, const uint32_t& dynamic_mem) {
     std::vector<uint8_t> data{};
     std::vector<uint32_t> code{};
     std::unordered_map<std::string, uint32_t> assembly_symbol_map{};
+    std::unordered_map<std::string, uint32_t> noncopy_arr_symbol_map{};
+    uint32_t noncopy_arr_ctr = 0;
 
     std::string line;
 
     assembler_section mode = NONE;
+    bool dmode_lockout = false, dmode_lockout_latch = false;
     while (std::getline(fi, line)) {
         std::vector<std::string> parsable = space_sep(line);
         std::cout << line;
         if (parsable[0].compare("end") == 0) {
             mode = NONE;
             std::cout << " (end_mode smem@" << data.size() << ")" << std::endl;
+            if (dmode_lockout_latch) {
+                dmode_lockout = true;
+                std::cout << "data block over! dumping " <<
+                 noncopy_arr_symbol_map.size() << 
+                 " arrs to symtab" << std::endl;
+                auto dsize = data.size();
+                dsize += dsize % 16;
+                for (const auto& [k, v] : noncopy_arr_symbol_map) {
+                    assembly_symbol_map.emplace(k, data.size()+v);
+                }
+            }
             continue;
         }
         switch (mode) {
@@ -331,8 +342,14 @@ bool assemble_file(const std::string& name, const uint32_t& dynamic_mem) {
                 }
                 break;
             case DATA:
-                std::cout << " (dmode)" << std::endl;
-                parseData(parsable, data, assembly_symbol_map);
+                if (!dmode_lockout) {
+                    dmode_lockout_latch = true;
+                    std::cout << " (dmode)" << std::endl;
+                    parseData(parsable, data, assembly_symbol_map, noncopy_arr_symbol_map, noncopy_arr_ctr);
+                } else {
+                    std::cout << "err; only one contiguous data block allowed!" << std::endl;
+                    return false;
+                }
                 break;
             case SYMTABLE:
                 std::cout << " (stmode)" << std::endl;
@@ -353,7 +370,7 @@ bool assemble_file(const std::string& name, const uint32_t& dynamic_mem) {
     std::string executable_name = name;
     executable_name.resize(name.length()-4);
     executable_name += ".mbn";
-    return write_executable(executable_name, dynamic_mem, symtable, data, code);
+    return write_executable(executable_name, noncopy_arr_ctr, symtable, data, code);
 }
 
 bool write_executable(const std::string& name, const uint32_t& dynamic_mem, const std::vector<symtable_ent>& symtable, const std::vector<uint8_t>& data, const std::vector<uint32_t>& code) {
@@ -371,7 +388,7 @@ bool write_executable(const std::string& name, const uint32_t& dynamic_mem, cons
     std::ofstream fo;
     fo.open(name, std::ios::binary | std::ios::out | std::ios::trunc);
 
-    // for the sake of not writing loss ass lines over and over
+    // for the sake of not writing long ass lines over and over
     #define fwritearr(var) fo.write(reinterpret_cast<char *>(var), sizeof(var))
     #define fwritevec(var) fo.write(reinterpret_cast<const char *>(&(var[0])), var.size()*sizeof(var[0]))
     #define fwritevar(var) fo.write(reinterpret_cast<char *>(&var), sizeof(var))

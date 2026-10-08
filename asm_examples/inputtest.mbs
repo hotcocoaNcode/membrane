@@ -1,6 +1,6 @@
 begin data
-text arr 14
-text_max_len i8 14
+text arr 32
+input_array_length i8 32
 retval i8 0
 end
 
@@ -12,7 +12,7 @@ end
 
 begin exec
 li 0 text
-li 1 text_max_len
+li 1 input_array_length
 kcall kernel_readln
 kcall kernel_println
 li 0 retval
